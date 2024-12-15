@@ -1,0 +1,196 @@
+{
+    "Sch\u00fclerID": {
+        "pseudonymize": true,
+        "not_null": true,
+        "faker_function": "random_number",
+        "faker_function_input_parameters": {"min_value": 200000, "max_value": 700000, "unique": true}
+    },
+    "Wohntyp": {
+        "pseudonymize": false,
+        "faker_function": null
+    },
+    "Sch\u00fclerName": {
+        "pseudonymize": true,
+        "faker_function": "last_name",
+        "faker_function_input_parameters": {}
+    },
+    "Sch\u00fclerVorname": {
+        "pseudonymize": true,
+        "faker_function": "first_name",
+        "faker_function_input_parameters": {"use_gender_col": true, "gender_col": "Sch\u00fclerGeschlecht", "female":"2", "male":"1"}
+    },
+    "Sch\u00fclerGeburtsdatum": {
+        "pseudonymize": true,
+        "faker_function": "date_add_random_days",
+        "faker_function_input_parameters": {"min_value": -5, "max_value": 5, "time_format": "%Y-%m-%dT%H:%M:%S"}
+    },
+    "Sch\u00fclerGeschlecht": {
+        "pseudonymize": false,
+        "faker_function": null
+    },
+    "Sch\u00fclerSozialversicheurng": {
+        "pseudonymize": true,
+        "faker_function": "ahv_nr"
+    },
+    "Sch\u00fclerAdresse": {
+        "pseudonymize": true,
+        "faker_function": "address",
+        "faker_function_input_parameters": {"unique_address_fields": ["Sch\u00fclerAdresse", "Sch\u00fclerPLZ"], "location_code_col": "plz", "location_data_col": "Sch\u00fclerPLZ"}
+    },
+    "Sch\u00fclerMobile": {
+        "pseudonymize": true,
+        "faker_function": "mobile",
+        "faker_function_input_parameters": {}
+    },
+    "Sch\u00fclerEMail": {
+        "pseudonymize": true,
+        "faker_function": "email",
+        "faker_function_input_parameters": {"first_name_col": "Sch\u00fclerVorname", "last_name_col": "Sch\u00fclerName"}
+    },
+    "KlasseLehrpersonID": {
+        "pseudonymize": true,
+        "faker_function": "random_number",
+        "faker_function_input_parameters": {"min_value": 100, "max_value": 700000, "unique": true}
+    },
+    "KlasseLehrpersonName": {
+        "pseudonymize": true,
+        "faker_function": "last_name",
+        "faker_function_input_parameters": {}
+    },
+    "KlasseLehrpersonVorname": {
+        "pseudonymize": true,
+        "faker_function": "first_name",
+        "faker_function_input_parameters": {"use_gender_col": false}
+    },
+    "KlasseLehrperson2ID": {
+        "pseudonymize": false,
+        "faker_function": "random_number",
+        "faker_function_input_parameters": {"min_value": 100, "max_value": 700000, "unique": true}
+    },
+    "KlasseLehrperson2Name": {
+        "pseudonymize": true,
+        "faker_function": "last_name",
+        "faker_function_input_parameters": {}
+    },
+    "KlasseLehrperson2Vorname": {
+        "pseudonymize": true,
+        "faker_function": "first_name",
+        "faker_function_input_parameters": {"use_gender_col": false}
+    },
+    "KlasseLehrperson3ID": {
+        "pseudonymize": true,
+        "faker_function": "random_number",
+        "faker_function_input_parameters": {"min_value": 100, "max_value": 700000, "unique": true}
+    },
+    "KlasseLehrperson3Name": {
+        "pseudonymize": true,
+        "faker_function": "last_name",
+        "faker_function_input_parameters": {}
+    },
+    "KlasseLehrperson3Vorname": {
+        "pseudonymize": true,
+        "faker_function": "first_name",
+        "faker_function_input_parameters": {"use_gender_col": false}
+    },
+    "KlasseLehrperson4ID": {
+        "pseudonymize": false,
+        "faker_function": "random_number",
+        "faker_function_input_parameters": {"min_value": 100, "max_value": 700000, "unique": true}
+    },
+    "KlasseLehrperson4Name": {
+        "pseudonymize": true,
+        "faker_function": "last_name",
+        "faker_function_input_parameters": {}
+    },
+    "KlasseLehrperson4Vorname": {
+        "pseudonymize": true,
+        "faker_function": "first_name",
+        "faker_function_input_parameters": {"use_gender_col": false}
+    },
+    "AdressierungName": {
+        "pseudonymize": true,
+        "faker_function": "last_name",
+        "faker_function_input_parameters": {}
+    },
+    "AdressierungVorname": {
+        "pseudonymize": true,
+        "faker_function": "first_name",
+        "faker_function_input_parameters": {"use_gender_col": false}
+    },
+    "AdressierungStrasse": {
+        "pseudonymize": true,
+        "faker_function": "street",
+        "faker_function_input_parameters": {"location_code_col": "plz", "location_data_col": "AdressierungPLZ"}
+    },
+    "AdressierungHausnummer": {
+        "pseudonymize": true,
+        "faker_function": "house_number",
+        "faker_function_input_parameters": {"frequency_suffix": 0.05}
+    },
+    "AdressierungTelefonPrivat": {
+        "pseudonymize": true,
+        "faker_function": "phone_number",
+        "faker_function_input_parameters": {"prefix": ["061"]}
+    },
+    "AdressierungTelefonGesch\u00e4ft": {
+        "pseudonymize": true,
+        "faker_function": "phone_number",
+        "faker_function_input_parameters": {"prefix": ["061"]}
+    },
+    "AdressierungNatel": {
+        "pseudonymize": true,
+        "faker_function": "mobile",
+        "faker_function_input_parameters": {}
+    },
+    "AdressierungEMail": {
+        "pseudonymize": true,
+        "faker_function": "email",
+        "faker_function_input_parameters": {}
+    },
+    "AdressierungNr2": {
+        "pseudonymize": false,
+        "faker_function": null,
+        "faker_function_input_parameters": {}
+    },
+    "AdressierungName2": {
+        "pseudonymize": true,
+        "faker_function": "last_name",
+        "faker_function_input_parameters": {}
+    },
+    "AdressierungVorname2": {
+        "pseudonymize": true,
+        "faker_function": "first_name",
+        "faker_function_input_parameters": {"use_gender_col": false}
+    },
+    "AdressierungStrasse2": {
+        "pseudonymize": true,
+        "faker_function": true,
+        "faker_function_input_parameters": {"location_code_col": "plz", "location_data_col": "AdressierungPLZ2"}
+    },
+    "AdressierungHausnummer2": {
+        "pseudonymize": true,
+        "faker_function": "house_number",
+        "faker_function_input_parameters": {"frequency_suffix": 0.05}
+    },
+    "AdressierungTelefonPrivat2": {
+        "pseudonymize": true,
+        "faker_function": "phone_number",
+        "faker_function_input_parameters": {"prefix": ["061"]}
+    },
+    "AdressierungTelefonGesch\u00e4ft2": {
+        "pseudonymize": true,
+        "faker_function": "phone_number",
+        "faker_function_input_parameters": {}
+    },
+    "AdressierungNatel2": {
+        "pseudonymize": true,
+        "faker_function": "mobile",
+        "faker_function_input_parameters": {}
+    },
+    "AdressierungEMail2": {
+        "pseudonymize": true,
+        "faker_function": "email",
+        "faker_function_input_parameters": {}
+    }
+    
+}
