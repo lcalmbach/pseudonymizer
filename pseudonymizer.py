@@ -10,11 +10,16 @@ import re
 
 fake = Faker("de_DE")
 url_addresses = "https://data.bs.ch/api/explore/v2.1/catalog/datasets/100259/exports/csv?lang=de&timezone=Europe%2FBerlin&use_labels=false&delimiter=%3B&select=str_name,hausnr,hausnr_zus,plz,ort"
+url_first_names = f"https://data.bs.ch/api/explore/v2.1/catalog/datasets/100129/exports/csv?lang=de&timezone=Europe%2FBerlin&use_labels=false&delimiter=%3B&select=vorname,anzahl,jahr&where=jahr={datetime.now().year-1}"
+url_last_names = f"https://data.bs.ch/api/explore/v2.1/catalog/datasets/100127/exports/csv?lang=de&timezone=Europe%2FBerlin&use_labels=false&delimiter=%3B&select=nachname,anzahl,jahr&where=jahr={datetime.now().year-1}"
+address_file = './data/100259.parquet'
+first_name_file = './data/100129.parquet'
+last_name_file = './data/100127.parquet'
 
 
 def generate_json_template(file_name: str):
-    """
-    Generate a JSON template based on the columns of a DataFrame.
+    """            address = 
+    Generate a JSON template basemagicd on the columns of a DataFrame.
     Each column is given a default configuration for anonymization.
 
     :param df: pandas DataFrame
@@ -43,21 +48,27 @@ def generate_json_template(file_name: str):
 class DataMasker:
     def __init__(self, file_path, config_path):
         self.file_path = file_path
-        st.write(config_path)
         with open(config_path, 'r') as config_file:
             self.config = json.load(config_file)
         self.data_in_df = pd.read_excel(file_path)
         self.data_out_df = self.data_in_df.copy()
-        self.addresses = self.get_addresses()
+        self.addresses = self.get_ogd_data(url= url_addresses, file=address_file)
+        self.first_names = self.get_ogd_data(url=url_first_names, file=first_name_file)
+        self.last_names = self.get_ogd_data(url=url_last_names, file=last_name_file)
 
-    def get_addresses(self):
+    def get_ogd_data(self, file:str, url:str):
         """
         Get the addresses from a CSV file.
 
         :return: DataFrame with addresses
         """
-        return pd.read_csv(url_addresses, sep=";")
-
+        if Path(file).exists():
+            return pd.read_parquet(file)
+        else:
+            df = pd.read_csv(url, sep=";")
+            df.to_parquet(file)
+            return df
+        
     def generate_ahv_number(self):
         """
         Generates a random, valid Swiss AHV number.
@@ -149,8 +160,8 @@ class DataMasker:
             self.date_add_random_days(column, faker_parameters)
         elif faker_function == "ahv_nr":
             self.ahv_nr(column, faker_parameters)
-        elif faker_function == "address":
-            self.address(column, faker_parameters)
+        elif faker_function == "random_address":
+            self.random_address(column, faker_parameters)
         elif faker_function == "mobile":
             self.mobile(column, faker_parameters)
         elif faker_function == "email":
@@ -353,7 +364,85 @@ class DataMasker:
             with_suffix = random.random() < settings["frequency_suffix"]
             self.data_out_df.loc[index, column] = get_random_housenumber(with_suffix)
 
-    def address(self, column, settings):
+    def split_street_housenumber(self, address):
+        """
+        Split the street and house number from the combined string.
+
+        :param street_housenumber: The combined street and house number.
+        :return: The street and house number as separate strings.
+        """
+        address = address.strip()
+    
+        # Use a regular expression to split street and house number
+        match = re.match(r"^(.*)\s+(\d+)$", address)
+        
+        if match:
+            street = match.group(1).strip()  # The part before the last number
+            house_number = match.group(2).strip()  # The numeric house number
+            return (street, house_number)
+        else:
+            return (address, None)
+    
+    def change_house_number(self, address, location_dict):
+        """
+        Change the house number in the address to a random number from the same street. if there are no other house numbers 
+        in the same street, pick a random address from the same location.
+
+        :param address: The original address.
+        :param location_dict: A dictionary with configuration, including:
+                            - "location_code_col": The column containing the postal code.
+                            - "location_value": The postal code of the address.
+        :return: The address with a random house number from the same street.
+        """
+        # Split the street and house number
+        street, house_number = self.split_street_housenumber(address)
+        if house_number is None:
+            return address
+        else:
+            df = self.addresses[(self.addresses['str_name'] == street) & (self.addresses[location_dict['location_code_col']] == location_dict['location_value'])]
+            if len(df) > 1:
+                random_address_in_street = df.sample(1).iloc[0]
+                house_number = random_address_in_street['hausnr'] if random_address_in_street['hausnr_zus'] is None else random_address_in_street['hausnr'] + random_address_in_street['hausnr_zus']
+                return f"{street} {house_number}"
+            else:
+                address = self.get_fake_address(location_dict)
+                return address
+                
+    def blur_address(self, column, settings):
+        """
+        Add a random number of days to the dates in the specified column of the DataFrame.
+
+        :param column: The column to add random days to.
+        :param faker_parameters: A dictionary with configuration, including:
+                            - "min_days": The minimum number of days to add.
+                            - "max_days": The maximum number of days to add.
+        """
+
+        # Determine the range of days to add
+        unique_address_fields = settings["unique_address_fields"]
+        unique_address_df = (
+            self.data_in_df[unique_address_fields]
+            .drop_duplicates()
+            .reset_index(drop=True)
+        )
+        # Initialize name dictionary for consistent mapping
+        address_dict = {}
+
+        # Generate aliases for unique names based on gender
+        for _, row in unique_address_df.iterrows():
+            original_address = row[column]
+            address_dict[original_address] = self.change_house_number(
+                original_address,
+                {
+                    "location_code_col": settings["location_code_col"],
+                    "location_value": row[settings["location_data_col"]],
+                }
+            )
+        self.data_out_df[column] = self.data_in_df[column].map(
+            lambda x: address_dict[x] if pd.notnull(x) else x
+        )
+
+    def random_address(self, column, settings):
         """
         Add a random number of days to the dates in the specified column of the DataFrame.
 
