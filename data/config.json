@@ -12,12 +12,12 @@
     "Sch\u00fclerName": {
         "pseudonymize": true,
         "faker_function": "last_name",
-        "faker_function_input_parameters": {}
+        "faker_function_input_parameters": {"source": "bs"}
     },
     "Sch\u00fclerVorname": {
         "pseudonymize": true,
         "faker_function": "first_name",
-        "faker_function_input_parameters": {"use_gender_col": true, "gender_col": "Sch\u00fclerGeschlecht", "female":"2", "male":"1"}
+        "faker_function_input_parameters": {"use_gender_col": true, "gender_col": "Sch\u00fclerGeschlecht", "female":"2", "male":"1", "source": "bs"}
     },
     "Sch\u00fclerGeburtsdatum": {
         "pseudonymize": true,

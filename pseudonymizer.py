@@ -10,8 +10,8 @@ import re
 
 fake = Faker("de_DE")
 url_addresses = "https://data.bs.ch/api/explore/v2.1/catalog/datasets/100259/exports/csv?lang=de&timezone=Europe%2FBerlin&use_labels=false&delimiter=%3B&select=str_name,hausnr,hausnr_zus,plz,ort"
-url_first_names = f"https://data.bs.ch/api/explore/v2.1/catalog/datasets/100129/exports/csv?lang=de&timezone=Europe%2FBerlin&use_labels=false&delimiter=%3B&select=vorname,anzahl,jahr&where=jahr={datetime.now().year-1}"
-url_last_names = f"https://data.bs.ch/api/explore/v2.1/catalog/datasets/100127/exports/csv?lang=de&timezone=Europe%2FBerlin&use_labels=false&delimiter=%3B&select=nachname,anzahl,jahr&where=jahr={datetime.now().year-1}"
+url_first_names = f"https://data.bs.ch/api/explore/v2.1/catalog/datasets/100129/exports/csv?lang=de&timezone=Europe%2FBerlin&use_labels=false&delimiter=%3B&select=vorname,geschlecht,anzahl&where=jahr={datetime.now().year-1}"
+url_last_names = f"https://data.bs.ch/api/explore/v2.1/catalog/datasets/100127/exports/csv?lang=de&timezone=Europe%2FBerlin&use_labels=false&delimiter=%3B&select=nachname,anzahl&where=jahr={datetime.now().year-1}"
 address_file = './data/100259.parquet'
 first_name_file = './data/100129.parquet'
 last_name_file = './data/100127.parquet'
@@ -63,11 +63,23 @@ class DataMasker:
         :return: DataFrame with addresses
         """
         if Path(file).exists():
-            return pd.read_parquet(file)
+            df = pd.read_parquet(file)
         else:
             df = pd.read_csv(url, sep=";")
+            if "vorname" in df.columns:
+                expanded_df = pd.DataFrame(
+                    df.apply(lambda row: [[row["vorname"], row["geschlecht"]]] * row["anzahl"], axis=1)
+                    .explode().tolist(), columns=["vorname", "geschlecht"]
+                )
+                df = expanded_df
+            elif "nachname" in df.columns:
+                expanded_df = pd.DataFrame(
+                    df.apply(lambda row: [row["nachname"]] * row["anzahl"], axis=1)
+                    .explode().tolist(), columns=["nachname"]
+                )
+                df = expanded_df
             df.to_parquet(file)
-            return df
+        return df
         
     def generate_ahv_number(self):
         """
@@ -562,6 +574,8 @@ class DataMasker:
         # Assign the unique numbers to the specified column
         self.data_out_df[column] = unique_numbers
 
+    
+
     def fake_first_names(self, column, settings: dict):
         """
         Generate fake first names based on gender for a specified column in the DataFrame.
@@ -571,6 +585,22 @@ class DataMasker:
                         - "gender_col": The column indicating gender.
                         - "female": The value representing female in the gender column.
         """
+        def get_fake_first_name(row, settings: dict):
+            if "source" in settings and settings["source"] == "bs":
+                if settings["use_gender_col"]:
+                    # map data source gender code to internal m/w gender code
+                    st.write(row)
+                    gender = "w" if str(row[settings['gender_col']]) == row[str(settings['female'])] else "m"
+                    return self.first_names[
+                        self.first_names["geschlecht"] == gender].sample(1).iloc[0]["vorname"]
+                else:
+                    return self.first_names.sample(1).iloc[0]["vorname"]
+            else:
+                if settings["use_gender_col"]:
+                    return fake.first_name_female() if row[settings["gender_col"]] == "w" else fake.first_name_male()
+                else:
+                    return fake.first_name()
+        
         if settings["use_gender_col"]:
             unique_names_df = (
                 self.data_in_df[[column, settings["gender_col"]]]
@@ -585,15 +615,7 @@ class DataMasker:
 
         for _, row in unique_names_df.iterrows():
             original_name = row[column]
-            if settings["use_gender_col"]:
-                gender = row[settings["gender_col"]]
-                if str(gender) == settings["female"]:
-                    alias = fake.first_name_female()
-                else:
-                    alias = fake.first_name_male()
-            else:
-                alias = fake.first_name()
-            name_dict[original_name] = alias
+            name_dict[original_name] = get_fake_first_name(row, settings)
 
         self.data_out_df[column] = self.data_in_df[column].map(name_dict)
 
@@ -606,6 +628,12 @@ class DataMasker:
                         - "gender_col": The column indicating gender.
                         - "female": The value representing female in the gender column.
         """
+        def get_fake_last_name(row, settings):
+            if "source" in settings and settings["source"] == "bs":
+                return self.last_names.sample(1).iloc[0]["nachname"]
+            else:
+                return fake.last_name()
+
         # Extract unique name-gender combinations
         unique_names_df = (
             self.data_in_df[[column]].drop_duplicates().reset_index(drop=True)
@@ -616,7 +644,8 @@ class DataMasker:
         # Generate aliases for unique names based on gender
         for _, row in unique_names_df.iterrows():
             original_name = row[column]
-            name_dict[original_name] = fake.last_name()
+            name_dict[original_name] = get_fake_last_name(row, settings)
+
 
         # Apply the generated aliases back to the DataFrame
         self.data_out_df[column] = self.data_in_df[column].map(name_dict)
