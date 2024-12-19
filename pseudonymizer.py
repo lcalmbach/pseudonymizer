@@ -137,6 +137,7 @@ class DataMasker:
         :return: DataFrame with pseudonymized columns
         """
         st.markdown("### Input")
+        st.write(self.data_in_df)
         self.delete_rows_with_missing_values()
         with st.expander("Columns", expanded=True):
             for column in self.data_in_df.columns:
